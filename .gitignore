@@ -1,0 +1,38 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+env/
+venv/
+.conda/
+.env/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+
+# macOS junk
+.DS_Store
+
+# Large data + checkpoints
+data/
+Data/
+QeMFi/
+QeMFi_cm/
+QeMFi_slatm/
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.ckpt
+
+# Logs / experiment outputs
+*.log
+runs/
+wandb/
