@@ -5,11 +5,10 @@ from torch.utils.data import DataLoader
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-
-from load_dataset import Dataset
-from model import Model
-from train import train_epoch, eval_epoch
-
+from src.aimvee.models.VEE_predictor import vee_predictor as Model
+from src.aimvee.vee_predictor_utils.load_dataset import Dataset
+from src.aimvee.vee_predictor_utils.train_utils import train_epoch, eval_epoch
+import joblib  # to save scaler / PCA
 
 DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/Data"
 
@@ -60,7 +59,7 @@ def main():
 
     #5 PCA reduction on representation
 
-    N_COMPONENTS = min(100, d_rep)  
+    N_COMPONENTS = 100
 
     print(f"Applying PCA reduction to {N_COMPONENTS} components...")
     pca = PCA(n_components=N_COMPONENTS)
@@ -90,6 +89,9 @@ def main():
 
     print(f"d_rep={d_rep}, n_fids={n_fids}, n_states={n_states}")
 
+    # Save scaler + PCA for test time
+    joblib.dump(scaler_X, os.path.join(DATA_DIR, "scaler_X.pkl"))
+    joblib.dump(pca,       os.path.join(DATA_DIR, "pca_X.pkl"))
 
     #8 Device + Model
     if torch.backends.mps.is_available():
