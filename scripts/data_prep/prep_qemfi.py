@@ -1,14 +1,12 @@
 import os
 import sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-if ROOT not in sys.path:
-    sys.path.append(ROOT)
-
-
+from src.aimvee.vee_predictor_utils.generate_cm import generate_cm
 from src.aimvee.vee_predictor_utils.qemfi_prep import prep_data_cm_ev
-
 MOLECULES = [
     "urea", "acrolein", "alanine", "sma", "nitrophenol",
     "urocanic", "dmabn", "thymine", "o-hbdi"
@@ -16,8 +14,8 @@ MOLECULES = [
 
 ROOT      = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/vee_predictor"
 QEMFI_DIR = os.path.join(ROOT,"QeMFi")       # QeMFi_*.npz
-REPS_DIR  = os.path.join(ROOT, "QeMFi_cm")    # QeMFi_*_CM.npy
-DATA_DIR  = os.path.join(ROOT, "Data")
+REPS_DIR  = os.path.join(ROOT, "QeMFi")    # QeMFi_*_CM.npy
+DATA_DIR  = os.path.join(ROOT, "Data_cm")
 
 
 def main():

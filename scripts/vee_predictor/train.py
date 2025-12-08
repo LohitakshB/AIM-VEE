@@ -1,16 +1,25 @@
 import os
+import sys
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+
+
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from src.aimvee.vee_predictor_utils.generate_cm import generate_cm
 from src.aimvee.models.VEE_predictor import vee_predictor as Model
 from src.aimvee.vee_predictor_utils.load_dataset import Dataset
 from src.aimvee.vee_predictor_utils.train_utils import train_epoch, eval_epoch
 import joblib  # to save scaler / PCA
 
-DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/Data"
+DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/vee_predictor/Data_cm"
 
 
 def main():

@@ -3,7 +3,7 @@ import numpy as np
 import qml
 from tqdm import tqdm
 
-def generate_cm(npz_path,output_dir):
+def generate_cm(npz_path,output_dir,sorting):
     """Generate Coulomb Matrix for all samples in a .npz file and save output"""
     
     filename = os.path.basename(npz_path)               # ex: QeMFi_urea.npz
@@ -22,7 +22,7 @@ def generate_cm(npz_path,output_dir):
         mol = qml.Compound(xyz=None)
         mol.nuclear_charges = Z
         mol.coordinates = R_all[i]
-        mol.generate_coulomb_matrix(size=len(Z), sorting="unsorted")
+        mol.generate_coulomb_matrix(size=len(Z), sorting=sorting)
         reps.append(mol.representation)
 
     reps = np.asarray(reps)
