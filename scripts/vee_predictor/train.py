@@ -19,7 +19,7 @@ from src.aimvee.vee_predictor_utils.load_dataset import Dataset
 from src.aimvee.vee_predictor_utils.train_utils import train_epoch, eval_epoch
 import joblib  # to save scaler / PCA
 
-DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/vee_predictor/Data_cm"
+DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/vee_predictor/Data"
 
 
 def main():

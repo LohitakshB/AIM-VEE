@@ -18,7 +18,7 @@ def train_epoch(model, loader, optimizer, device, mean_y=None, std_y=None):
         # Forward
         pred = model(feats, fid, state)                # (B,)
 
-        # --- Loss: use scaled y if mean_y/std_y provided ---
+        #Loss: use scaled y if mean_y/std_y provided
         if (mean_y is not None) and (std_y is not None):
             # scale both pred and y using the same stats
             pred_scaled = (pred - mean_y) / std_y
@@ -56,15 +56,13 @@ def eval_epoch(model, loader, device, mean_y=None, std_y=None):
             y     = batch["target"].to(device).float()
 
             pred = model(feats, fid, state)
-
-            # We still want the model trained with the same loss form as train_epoch,
-            # so if you want to be super-consistent you could recompute the scaled loss here,
-            # but for evaluation we care about REAL MAE:
+        
+            # Calculate MAE in REAL cm^-1 for comparing 
             mae_batch = torch.mean(torch.abs(pred - y)).item()
 
             batch_size = y.size(0)
             total_mae += mae_batch * batch_size
             n_samples += batch_size
 
-    # Return mean MAE in real cm^-1
+    # Return mean MAE in real cm^-1(will be evaluated in eV later)
     return total_mae / n_samples
