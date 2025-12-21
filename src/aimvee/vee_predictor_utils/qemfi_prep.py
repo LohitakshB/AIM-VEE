@@ -48,7 +48,7 @@ def expand_geom_fid_state_block(
     for g in range(n_geom):
         for f in range(n_fids):
             for s in range(n_states):
-                # CM rep
+                # {method} rep
                 X_expanded[k, :d_rep] = X_block[g]
                 # append fid/state indices
                 X_expanded[k, d_rep]     = f
@@ -67,20 +67,22 @@ def expand_geom_fid_state_block(
     return X_expanded, y_expanded, fid_ids, state_ids, mol_exp, geom_exp
 
 
-def prep_data_cm_ev(
+def prep_data(
     data_dir: str,
     molecules,
     reps_dir: str,
     qemfi_dir: str,
+    method: str,
     n_geom_per_mol: int = 15000,
+    
 ):
     """
-    Prepare CM-based EV dataset with shared geometry split.
+    Prepare {method}-based EV dataset with shared geometry split.
 
     - Uses ALL fidelities & states for TRAIN.
     - VAL/TEST filtered to highest fidelity.
     - Saves:
-        CM_train.npy, CM_val.npy, CM_test.npy
+        {method}_train.npy, {method}_val.npy, {method}_test.npy
         EV_train.npy, EV_val.npy, EV_test.npy
 
     Returns:
@@ -94,8 +96,8 @@ def prep_data_cm_ev(
 
     total_geoms = len(molecules) * n_geom_per_mol
 
-    # use last molecule CM reps to get max feature dim
-    example_rep_path = os.path.join(reps_dir, f"QeMFi_{molecules[-1]}_CM.npy")
+    # use last molecule {method} reps to get max feature dim
+    example_rep_path = os.path.join(reps_dir, f"QeMFi_{molecules[-1]}_{method}.npy")
     example_rep      = np.load(example_rep_path)
     max_dim          = example_rep.shape[1]
 
@@ -123,8 +125,8 @@ def prep_data_cm_ev(
         idx_local = np.arange(n_geom_per_mol)
         idx_local = shuffle(idx_local, random_state=42)
 
-        # load CM representations
-        rep_path = os.path.join(reps_dir, f"QeMFi_{mol}_CM.npy")
+        # load {method} representations
+        rep_path = os.path.join(reps_dir, f"QeMFi_{mol}_{method}.npy")
         reps_mol = np.load(rep_path)  # (15000, d_m)
         d_m      = reps_mol.shape[1]
 
@@ -209,10 +211,10 @@ def prep_data_cm_ev(
     X_test        = X_test[test_mask]
     y_test        = y_test[test_mask]
 
-    # 7) Save feature matrices (CM_*.npy with fid/state as last 2 cols)
-    np.save(os.path.join(data_dir, "CM_train.npy"), X_train)
-    np.save(os.path.join(data_dir, "CM_val.npy"),   X_val)
-    np.save(os.path.join(data_dir, "CM_test.npy"),  X_test)
+    # 7) Save feature matrices ({method}_*.npy with fid/state as last 2 cols)
+    np.save(os.path.join(data_dir, f"{method}_train.npy"), X_train)
+    np.save(os.path.join(data_dir, f"{method}_val.npy"),   X_val)
+    np.save(os.path.join(data_dir, f"{method}_test.npy"),  X_test)
 
     # 8) Save EV targets
     np.save(os.path.join(data_dir, "EV_train.npy"), y_train)
