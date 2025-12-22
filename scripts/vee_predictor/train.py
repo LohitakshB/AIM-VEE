@@ -13,14 +13,13 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.aimvee.vee_predictor_utils.generate_cm import generate_cm
 from src.aimvee.models.VEE_predictor import vee_predictor as Model
 from src.aimvee.vee_predictor_utils.load_dataset import Dataset
 from src.aimvee.vee_predictor_utils.train_utils import train_epoch, eval_epoch
 import joblib  # to save scaler / PCA
 
 DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/vee_predictor/Data"
-
+OUTPUT_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/models/predictor"
 
 def main():
     #1 Load preprocessed CM features + EV targets
@@ -99,8 +98,8 @@ def main():
     print(f"d_rep={d_rep}, n_fids={n_fids}, n_states={n_states}")
 
     # Save scaler + PCA for test time
-    joblib.dump(scaler_X, os.path.join(DATA_DIR, "scaler_X.pkl"))
-    joblib.dump(pca,       os.path.join(DATA_DIR, "pca_X.pkl"))
+    joblib.dump(scaler_X, os.path.join(OUTPUT_DIR, "scaler_X.pkl"))
+    joblib.dump(pca,       os.path.join(OUTPUT_DIR, "pca_X.pkl"))
 
     #8 Device + Model
     if torch.backends.mps.is_available():
@@ -116,7 +115,7 @@ def main():
         n_states=n_states,
         hidden_dim=512,
         emb_dim=32,
-        dropout=0.2
+        dropout=0.05
     ).to(device)
 
     optimizer = torch.optim.Adam(
@@ -137,7 +136,7 @@ def main():
 
  
     #9 Training loop
-    for epoch in range(50):
+    for epoch in range(100):
         print("\nStarting epoch:", epoch)
 
         train_mae = train_epoch(model, train_loader, optimizer, device=device)
@@ -153,7 +152,7 @@ def main():
 
         if val_mae < best_val:
             best_val = val_mae
-            torch.save(model.state_dict(), os.path.join(DATA_DIR, "best_cm_model.pt"))
+            torch.save(model.state_dict(), os.path.join(OUTPUT_DIR, "best_model.pt"))
 
             print(
                 f" New BEST model saved with Val MAE = "
