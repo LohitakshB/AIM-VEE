@@ -101,7 +101,6 @@ def main():
     np.save(OUT_NPY, X_final)
     np.save(OUT_ENERGY_NPY, np.asarray(energy_rows, dtype=np.float32))
     print("Saved:", OUT_NPY, "shape:", X_final.shape)
-    print("Saved:", OUT_ENERGY_NPY, "shape:", (len(energy_rows),))
 
 
 if __name__ == "__main__":
