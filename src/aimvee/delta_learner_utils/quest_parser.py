@@ -50,7 +50,7 @@ def _parse_transitions(dat_path):
             if not line.strip():
                 continue
             if line.lstrip().startswith("#"):
-                # skip comment / separator
+                # skip separators/comments
                 continue
 
             tokens = line.split()
@@ -66,10 +66,10 @@ def _parse_transitions(dat_path):
                 fin_spin = int(tokens[4])
                 fin_symm = tokens[5]
             except ValueError:
-                # Something malformed; skip row
+                # skip malformed row
                 continue
 
-            # Find first token after index 5 that is a float → energy
+            # find first token after index 5 that is a float (energy)
             energy_idx = None
             for i in range(6, len(tokens)):
                 try:
@@ -82,11 +82,11 @@ def _parse_transitions(dat_path):
             if energy_idx is None:
                 continue
 
-            # transition type is everything between symm and energy
+            # transition type = tokens between symm and energy
             type_tokens = tokens[6:energy_idx]
             trans_type = " ".join(type_tokens) if type_tokens else ""
 
-            # energy
+            # energy value
             energy_eV = float(tokens[energy_idx])
 
             # optional: %T1, osc strength, unsafe flag

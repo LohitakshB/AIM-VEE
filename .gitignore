@@ -28,7 +28,6 @@ QeMFi_slatm/
 *.npz
 *.h5
 *.hdf5
-*.pt
 *.pth
 *.ckpt
 

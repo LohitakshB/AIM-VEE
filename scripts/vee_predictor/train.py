@@ -22,7 +22,7 @@ DATA_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/data/vee_predictor/Data"
 OUTPUT_DIR = "/Users/lohitakshbadarala/Desktop/AIM-VEE/models/predictor"
 
 def main():
-    #1 Load preprocessed CM features + EV targets
+    #1) Load CM features and EV targets
     X_train = np.load(os.path.join(DATA_DIR, "CM_train.npy"))
     y_train = np.load(os.path.join(DATA_DIR, "EV_train.npy"))
 
@@ -31,7 +31,7 @@ def main():
 
     print("Loaded shapes:", X_train.shape, y_train.shape)
 
-    #2 Drop invalid targets (y < 0)
+    #2) Drop invalid targets (y < 0)
     mask_train = y_train >= 0
     mask_val   = y_val >= 0
 
@@ -46,7 +46,7 @@ def main():
 
 
 
-    #3 Separate representation (CM) from indices (fid, state)
+    #3) Separate CM representation from fid/state indices
     d_rep = X_train.shape[1] - 2   # last 2 columns = fid, state
 
     X_train_rep = X_train[:, :d_rep]   # CM representation
@@ -57,15 +57,18 @@ def main():
 
 
 
-    #4 Scale CM representation using StandardScaler
+    #4) Scale CM representation and y targets
 
     scaler_X = StandardScaler()
     X_train_rep = scaler_X.fit_transform(X_train_rep)
     X_val_rep   = scaler_X.transform(X_val_rep)
 
+    scaler_y = StandardScaler()
+    y_train = scaler_y.fit_transform(y_train.reshape(-1, 1)).flatten()
+    y_val   = scaler_y.transform(y_val.reshape(-1, 1)).flatten()
 
 
-    #5 PCA reduction on representation
+    #5) PCA reduction
 
     N_COMPONENTS = 100
 
@@ -78,13 +81,13 @@ def main():
     print("New representation dim:", new_d_rep)
 
 
-    #6 Rejoin PCA representation with fid/state
+    #6) Rejoin PCA representation with fid/state
     X_train = np.concatenate([X_train_rep, X_train_idx], axis=1)
     X_val   = np.concatenate([X_val_rep,   X_val_idx],   axis=1)
 
 
 
-    #7 Build Dataset + DataLoaders
+    #7) Build Dataset and DataLoaders
     train_ds = Dataset(X_train, y_train)
     val_ds   = Dataset(X_val,   y_val)
 
@@ -97,11 +100,12 @@ def main():
 
     print(f"d_rep={d_rep}, n_fids={n_fids}, n_states={n_states}")
 
-    # Save scaler + PCA for test time
+    # Save scaler and PCA for test time
     joblib.dump(scaler_X, os.path.join(OUTPUT_DIR, "scaler_X.pkl"))
     joblib.dump(pca,       os.path.join(OUTPUT_DIR, "pca_X.pkl"))
+    joblib.dump(scaler_y, os.path.join(OUTPUT_DIR, "scaler_y.pkl"))
 
-    #8 Device + Model
+    #8) Device selection and model initialization
     if torch.backends.mps.is_available():
         device = torch.device("mps")
         print("Using Apple MPS GPU")
@@ -135,11 +139,11 @@ def main():
     CM_TO_EV = 1.239841984e-4
 
  
-    #9 Training loop
+    #9) Training loop
     for epoch in range(100):
         print("\nStarting epoch:", epoch)
 
-        train_mae = train_epoch(model, train_loader, optimizer, device=device)
+        train_mae = train_epoch(model, train_loader, optimizer, std_y=scaler_y.scale_[0])
         val_mae   = eval_epoch(model, val_loader, device=device)
 
         scheduler.step(val_mae)

@@ -4,28 +4,28 @@ import numpy as np
 
 class Dataset(Dataset):
     def __init__(self, X, y):
-        """
-        X shape: (N, d_rep + 2)
-            [:, :d_rep] = CM features
-            [:, -2]     = fid index   (int)
-            [:, -1]     = state index (int)
-        y shape: (N,)
-        """
+        """Dataset wrapper.
+
+            X shape: (N, d_rep + 2)
+                [:, :d_rep] = CM features
+                [:, -2]     = fid index (int)
+                [:, -1]     = state index (int)
+        y shape: (N,)"""
 
         self.X = X.astype(np.float32)
         self.y = y.astype(np.float32)
 
-        # Determine d_rep (first part of the feature vector)
+        # d_rep: feature dimension
         self.d_rep = X.shape[1] - 2
 
-        # Separate internal arrays
+        # separate internal arrays
         self.feats = self.X[:, :self.d_rep]
 
-        # Fidelity and state MUST be integers for embeddings
+        # fidelity and state must be integers for embeddings
         self.fid_ids   = self.X[:, -2].astype(np.int64)
         self.state_ids = self.X[:, -1].astype(np.int64)
 
-        # Count number of categories
+        # count categories
         self.n_fids   = int(np.max(self.fid_ids)) + 1
         self.n_states = int(np.max(self.state_ids)) + 1
 
