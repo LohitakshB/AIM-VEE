@@ -18,20 +18,14 @@ venv/
 # macOS junk
 .DS_Store
 
-# Large data + checkpoints
-data/
-Data/
-QeMFi/
-QeMFi_cm/
-QeMFi_slatm/
-*.npy
-*.npz
-*.h5
-*.hdf5
-*.pth
-*.ckpt
-
 # Logs / experiment outputs
 *.log
 runs/
 wandb/
+
+# Large files (download separately)
+models/
+data/
+*.pkl
+*.npy
+*.npz
