@@ -1,0 +1,15 @@
+joblib
+numpy
+periodictable
+scikit-learn
+torch
+torch-geometric
+tqdm
+qml
+
+[chem]
+rdkit-pypi
+
+[dev]
+pytest
+ruff

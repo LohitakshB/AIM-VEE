@@ -11,6 +11,7 @@ requires-python = ">=3.9"
 dependencies = [
   "joblib",
   "numpy",
+  "periodictable",
   "scikit-learn",
   "torch",
   "tqdm",
@@ -19,6 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
+chem = ["rdkit-pypi"]
 
 [project.scripts]
 aimvee = "aimvee.cli:main"

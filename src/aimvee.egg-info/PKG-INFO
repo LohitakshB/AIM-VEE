@@ -1,0 +1,74 @@
+Metadata-Version: 2.4
+Name: aimvee
+Version: 0.1.0
+Summary: AIM-VEE: research codebase for VEE prediction and related models.
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: joblib
+Requires-Dist: numpy
+Requires-Dist: periodictable
+Requires-Dist: scikit-learn
+Requires-Dist: torch
+Requires-Dist: tqdm
+Requires-Dist: qml
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Provides-Extra: chem
+Requires-Dist: rdkit-pypi; extra == "chem"
+
+# AIM-VEE
+
+AIM-VEE is a research codebase for predicting vertical excitation energies (VEE) using a multi-fidelity fusion pipeline (QeMFi surrogate + SchNet latent + MFF-MLP) along with baseline models.
+
+## Structure
+
+- `src/aimvee/`: reusable library code (datasets, features, models, trainers, experiments)
+- `scripts/`: thin wrappers around experiment entrypoints
+- `configs/`: example configuration files
+- `docs/`: reproducibility and structure notes
+- `data/` and `models/`: local datasets and artifacts (ignored by git)
+
+## Install
+
+```
+pip install -e .
+```
+
+Optional dependencies
+- `qml` for Coulomb matrices
+- `rdkit` for Morgan fingerprints and SMILES/scaffold processing
+
+## Quickstart
+
+Generate QeMFi Coulomb matrices:
+
+```
+python -m aimvee.cli generate-cm --input-dir data/QeMFI_all/QeMFi --output-dir data/QeMFI_all/QeMFi_cm
+```
+
+Prepare QeMFi training arrays:
+
+```
+python -m aimvee.cli prep-qemfi --qemfi-dir data/QeMFI_all/QeMFi --reps-dir data/QeMFI_all/QeMFi_cm --data-dir data/QeMFI_all/model_training_test_data
+```
+
+Train the QeMFi surrogate:
+
+```
+python -m aimvee.cli train-qemfi --data-dir data/QeMFI_all/model_training_test_data --output-dir models/qemfi_surrogate
+```
+
+Prepare split CSVs for QM9:
+
+```
+python -m aimvee.cli prepare-splits --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --output-dir data/QM9GWBSE/splits
+```
+
+Train MFF-MLP:
+
+```
+python -m aimvee.cli train-mff-mlp --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits --output-dir models/mff_mlp --qemfi-model-dir models/qemfi_surrogate
+```
+
+For more details, see `docs/repro.md`.
