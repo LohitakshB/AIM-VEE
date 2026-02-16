@@ -65,5 +65,4 @@ train_rf_morgan(split, output_dir="models/rf_morgan")
 ```
 
 Notes:
-- Evaluation and plotting are CLI-only (`evaluate-qm9`, `plot-qm9`).
 - Most functions accept keyword arguments mirroring CLI flags.

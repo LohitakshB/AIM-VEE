@@ -9,18 +9,20 @@ from aimvee.experiments.chemprop import build_parser as build_chemprop_parser
 from aimvee.experiments.chemprop import run_chemprop
 from aimvee.experiments.data_prep import build_parser as build_data_prep_parser
 from aimvee.experiments.data_prep import run_data_prep
+from aimvee.experiments.evaluate import build_parser as build_eval_parser
+from aimvee.experiments.evaluate import run_evaluation
+from aimvee.experiments.evaluate_model import (
+    build_parser as build_eval_model_parser,
+    run_evaluate_model,
+)
 from aimvee.experiments.mff_mlp import build_parser as build_mff_mlp_parser
 from aimvee.experiments.mff_mlp import run_mff_mlp
+from aimvee.experiments.umff_mlp import build_parser as build_umff_mlp_parser
+from aimvee.experiments.umff_mlp import run_umff_mlp
 from aimvee.experiments.qemfi import (
     run_generate_cm,
     run_prep_qemfi,
     run_train_qemfi,
-)
-from aimvee.experiments.qm9_testing import (
-    build_evaluate_parser as build_qm9_eval_parser,
-    build_plot_parser as build_qm9_plot_parser,
-    run_evaluate_qm9,
-    run_plot_qm9,
 )
 from aimvee.experiments.rf_morgan import build_parser as build_rf_morgan_parser
 from aimvee.experiments.rf_morgan import run_rf_morgan
@@ -119,19 +121,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     mff_parser.set_defaults(func=run_mff_mlp)
 
-    eval_parser = subparsers.add_parser(
-        "evaluate-qm9",
-        parents=[build_qm9_eval_parser(add_help=False)],
-        help="Evaluate QM9-GWBSE models on a test split.",
+    umff_parser = subparsers.add_parser(
+        "train-umff-mlp",
+        parents=[build_umff_mlp_parser(add_help=False)],
+        help="Train UMFF-MLP with uncertainty quantification.",
     )
-    eval_parser.set_defaults(func=run_evaluate_qm9)
+    umff_parser.set_defaults(func=run_umff_mlp)
 
-    plot_parser = subparsers.add_parser(
-        "plot-qm9",
-        parents=[build_qm9_plot_parser(add_help=False)],
-        help="Plot QM9-GWBSE evaluation results.",
+    eval_parser = subparsers.add_parser(
+        "evaluate",
+        parents=[build_eval_parser(add_help=False)],
+        help="Evaluate model predictions and compare methods.",
     )
-    plot_parser.set_defaults(func=run_plot_qm9)
+    eval_parser.set_defaults(func=run_evaluation)
+
+    eval_model_parser = subparsers.add_parser(
+        "evaluate-model",
+        parents=[build_eval_model_parser(add_help=False)],
+        help="Run model inference on an input CSV and generate graphs.",
+    )
+    eval_model_parser.set_defaults(func=run_evaluate_model)
 
     return parser
 

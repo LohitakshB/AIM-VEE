@@ -1,4 +1,4 @@
-"""Public Python API for AIM-VEE workflows."""
+"""Python API for AIM-VEE workflows."""
 
 from __future__ import annotations
 

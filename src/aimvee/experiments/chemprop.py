@@ -61,6 +61,7 @@ def run_chemprop(args: argparse.Namespace) -> None:
         seed=args.seed,
         split_method=args.split_method,
         train_all_splits=args.train_all_splits,
+        split_name=args.split_name,
         predefined_train_csv=(
             Path(args.predefined_train) if args.predefined_train else None
         ),
@@ -72,23 +73,31 @@ def run_chemprop(args: argparse.Namespace) -> None:
         ),
     )
 
-    extra_args = shlex.split(args.chemprop_args)
+    extra_args = shlex.split(args.chemprop_args) if args.chemprop_args else []
 
-    for split_method, train_csv, val_csv, _ in split_iter:
+    for split_method, train_csv, val_csv, split_root in split_iter:
         print(f"Using splits ({split_method})...")
         split_output = Path(args.output_dir) / split_method
         split_output.mkdir(parents=True, exist_ok=True)
+        test_csv = split_root / "test.csv"
+        if not test_csv.exists():
+            raise FileNotFoundError(f"Missing test split CSV: {test_csv}")
 
+        preds_path = split_output / "test_predictions.csv"
         cmd = [
             *chemprop_cmd,
             "--data_path",
             str(train_csv),
             "--separate_val_path",
             str(val_csv),
+            "--separate_test_path",
+            str(test_csv),
             "--dataset_type",
             "regression",
             "--save_dir",
             str(split_output),
+            "--save_preds_path",
+            str(preds_path),
             "--smiles_columns",
             "smiles",
             "--target_columns",

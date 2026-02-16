@@ -169,6 +169,52 @@ def _eval_epoch(
     return total_loss / len(loader.dataset)
 
 
+def _predict_loader(
+    schnet: SchNet,
+    mff_mlp: torch.nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    latent_handle: dict,
+) -> Tuple[np.ndarray, np.ndarray]:
+    schnet.eval()
+    mff_mlp.eval()
+    preds: List[torch.Tensor] = []
+    targets: List[torch.Tensor] = []
+    with torch.no_grad():
+        for batch in loader:
+            batch = batch.to(device)
+            latent_handle.clear()
+            _ = schnet(batch.z, batch.pos, batch.batch)
+            latent = latent_handle.get("value")
+            if latent is None:
+                raise RuntimeError("Failed to capture SchNet latents.")
+            if latent.dim() == 1:
+                latent = latent.unsqueeze(1)
+            if latent.shape[0] != batch.num_graphs:
+                latent = global_mean_pool(latent, batch.batch)
+            qemfi = batch.qemfi
+            if qemfi.dim() == 1:
+                qemfi = qemfi.unsqueeze(1)
+            features = torch.cat([qemfi, latent], dim=1)
+            preds.append(mff_mlp(features).cpu())
+            targets.append(batch.y.view(-1).cpu())
+    pred_vals = torch.cat(preds, dim=0).numpy()
+    target_vals = torch.cat(targets, dim=0).numpy()
+    return target_vals, pred_vals
+
+
+def _save_prediction_csv(
+    path: Path, targets: np.ndarray, preds: np.ndarray
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["target", "pred_mean"])
+        for target, pred in zip(targets, preds):
+            writer.writerow([target, pred])
+
+
+
+
 def _repo_root() -> Path:
     root = Path(__file__).resolve()
     while root != root.parent and not (root / "pyproject.toml").exists():
@@ -196,10 +242,7 @@ def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
     parser.add_argument("--mlp-dropout", type=float, default=0.1)
 
     repo_root = _repo_root()
-    parser.add_argument(
-        "--qemfi-model-dir",
-        default=str(repo_root / "models" / "aim_vee_model" / "qemfi_surrogate"),
-    )
+    parser.add_argument("--qemfi-model-dir", required=True)
     parser.add_argument("--qemfi-fidelity", type=int, default=4)
     parser.add_argument("--qemfi-batch-size", type=int, default=2048)
     parser.add_argument("--n-lowest-states", type=int, default=10)
@@ -340,6 +383,7 @@ def run_mff_mlp(args: argparse.Namespace) -> None:
         seed=args.seed,
         split_method=args.split_method,
         train_all_splits=args.train_all_splits,
+        split_name=args.split_name,
         predefined_train_csv=(
             Path(args.predefined_train) if args.predefined_train else None
         ),
@@ -467,13 +511,21 @@ def run_mff_mlp(args: argparse.Namespace) -> None:
                 best_val = val_mae
                 torch.save(mff_mlp.state_dict(), run_output / "best_model.pt")
                 torch.save(schnet_model.state_dict(), run_output / "best_schnet.pt")
+                print(f"New best: val_mae={best_val:.6f}")
 
-        torch.save(mff_mlp.state_dict(), run_output / "final_model.pt")
-        torch.save(schnet_model.state_dict(), run_output / "final_schnet.pt")
-        test_mae = _eval_epoch(
+        best_mlp = run_output / "best_model.pt"
+        best_schnet = run_output / "best_schnet.pt"
+        if best_mlp.exists():
+            mff_mlp.load_state_dict(torch.load(best_mlp, map_location=device))
+        if best_schnet.exists():
+            schnet_model.load_state_dict(torch.load(best_schnet, map_location=device))
+
+        test_targets, test_preds = _predict_loader(
             schnet_model, mff_mlp, test_loader, device, latent_handle
         )
-        print(f"Final test MAE ({split_method}): {test_mae:.6f}")
+        _save_prediction_csv(
+            run_output / "test_predictions.csv", test_targets, test_preds
+        )
         hook_handle.remove()
 
 

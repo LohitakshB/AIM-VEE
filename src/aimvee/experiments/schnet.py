@@ -14,6 +14,7 @@ from aimvee.data_utils.data_prep import add_split_args, iter_split_csvs
 from aimvee.datasets.geometry import GeometryCsvDataset
 from aimvee.trainers.torch_geom import eval_epoch, train_epoch
 from aimvee.utils import ensure_dir, select_device
+import csv
 
 
 def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
@@ -54,6 +55,7 @@ def run_schnet(args: argparse.Namespace) -> None:
             seed=args.seed,
             split_method=args.split_method,
             train_all_splits=args.train_all_splits,
+            split_name=args.split_name,
             predefined_train_csv=(
                 Path(args.predefined_train) if args.predefined_train else None
             ),
@@ -67,16 +69,23 @@ def run_schnet(args: argparse.Namespace) -> None:
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
 
-    for split_method, train_csv, val_csv, _ in split_iter:
+    for split_method, train_csv, val_csv, split_output in split_iter:
         print(f"Using splits ({split_method})...")
 
         print("Loading datasets...")
         train_ds = GeometryCsvDataset(train_csv)
         val_ds = GeometryCsvDataset(val_csv)
+        test_csv = split_output / "test.csv"
+        test_ds = GeometryCsvDataset(test_csv) if test_csv.exists() else None
 
         print("Building data loaders...")
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
         val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False)
+        test_loader = (
+            DataLoader(test_ds, batch_size=args.batch_size, shuffle=False)
+            if test_ds
+            else None
+        )
 
         device = select_device(args.device)
         print(f"Using device: {device}")
@@ -112,8 +121,26 @@ def run_schnet(args: argparse.Namespace) -> None:
                 torch.save(model.state_dict(), run_output_dir / "best_model.pt")
                 print(f"New best: val_mae={best_val:.6f}")
 
-        torch.save(model.state_dict(), run_output_dir / "final_model.pt")
-
+        if test_loader is not None:
+            best_path = run_output_dir / "best_model.pt"
+            if best_path.exists():
+                model.load_state_dict(torch.load(best_path, map_location=device))
+            model.eval()
+            preds = []
+            targets = []
+            with torch.no_grad():
+                for batch in test_loader:
+                    batch = batch.to(device)
+                    preds.append(model(batch.z, batch.pos, batch.batch).cpu())
+                    targets.append(batch.y.view(-1).cpu())
+            pred_vals = torch.cat(preds, dim=0).numpy()
+            target_vals = torch.cat(targets, dim=0).numpy()
+            pred_path = run_output_dir / "test_predictions.csv"
+            with pred_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["target", "pred_mean"])
+                for target, pred in zip(target_vals, pred_vals):
+                    writer.writerow([target, pred])
 
 def main() -> None:
     parser = build_parser()

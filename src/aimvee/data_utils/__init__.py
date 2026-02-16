@@ -1,4 +1,4 @@
-"""Dataset utilities and helpers (legacy imports)."""
+"""Dataset utilities and helpers."""
 
 from aimvee.data_utils.data_prep import add_split_args, iter_split_csvs, prepare_dataset
 

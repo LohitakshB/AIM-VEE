@@ -106,6 +106,10 @@ def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
         help="Split strategy for train/val/test generation.",
     )
     parser.add_argument(
+        "--split-name",
+        help="Override the output subdirectory name for the split (default: split method).",
+    )
+    parser.add_argument(
         "--predefined-train",
         help="Path to a pre-defined train CSV (required for --split-method predefined).",
     )
@@ -140,6 +144,7 @@ def run_data_prep(args: argparse.Namespace) -> None:
             seed=args.seed,
             split_method=args.split_method,
             train_all_splits=args.train_all_splits,
+            split_name=args.split_name,
             predefined_train_csv=(
                 Path(args.predefined_train) if args.predefined_train else None
             ),

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import json
+import csv
 from pathlib import Path
 
+import numpy as np
+
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
 
 from aimvee.data_utils.data_prep import add_split_args, iter_split_csvs
 from aimvee.features.morgan import load_morgan_dataset, parse_max_features
@@ -46,6 +47,7 @@ def run_rf_morgan(args: argparse.Namespace) -> None:
         seed=args.seed,
         split_method=args.split_method,
         train_all_splits=args.train_all_splits,
+        split_name=args.split_name,
         predefined_train_csv=(
             Path(args.predefined_train) if args.predefined_train else None
         ),
@@ -57,7 +59,7 @@ def run_rf_morgan(args: argparse.Namespace) -> None:
         ),
     )
 
-    for split_method, train_csv, val_csv, _ in split_iter:
+    for split_method, train_csv, val_csv, split_output in split_iter:
         print(f"Using splits ({split_method})...")
         output_dir = Path(args.output_dir) / split_method
         ensure_dir(output_dir)
@@ -81,7 +83,7 @@ def run_rf_morgan(args: argparse.Namespace) -> None:
         model.fit(x_train, y_train)
 
         val_preds = model.predict(x_val)
-        val_mae = mean_absolute_error(y_val, val_preds)
+        val_mae = float(np.mean(np.abs(y_val - val_preds)))
         print(f"val_mae={val_mae:.6f}")
 
         model_path = output_dir / "rf_morgan.pkl"
@@ -95,11 +97,21 @@ def run_rf_morgan(args: argparse.Namespace) -> None:
         else:
             joblib.dump(model, model_path)
 
-        metrics = {"val_mae": float(val_mae)}
-        (output_dir / "metrics.json").write_text(
-            json.dumps(metrics, indent=2), encoding="utf-8"
-        )
         print(f"Saved model to {model_path}")
+
+        test_csv = split_output / "test.csv"
+        if test_csv.exists():
+            x_test, y_test = load_morgan_dataset(
+                test_csv, args.radius, args.n_bits
+            )
+            test_preds = model.predict(x_test)
+            pred_path = output_dir / "test_predictions.csv"
+            with pred_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["target", "pred_mean"])
+                for target, pred in zip(y_test, test_preds):
+                    writer.writerow([target, pred])
+
 
 
 def main() -> None:

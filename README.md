@@ -48,13 +48,6 @@ Train MFF-MLP:
 python -m aimvee.cli train-mff-mlp --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits --output-dir models/mff_mlp --qemfi-model-dir models/qemfi_surrogate
 ```
 
-Evaluate and plot QM9-GWBSE results:
-
-```
-python -m aimvee.cli evaluate-qm9 --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits
-python -m aimvee.cli plot-qm9 --results-dir outputs/qm9_testing --split-method random
-```
-
 ## Documentation
 
 - `docs/structure.md`: repo layout and where to find components.

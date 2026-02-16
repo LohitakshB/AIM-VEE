@@ -35,13 +35,6 @@ python -m aimvee.cli train-chemprop --xyz-dir data/QM9GWBSE/QM9_xyz_files --meta
 python -m aimvee.cli train-rf-morgan --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits --output-dir models/rf_morgan
 ```
 
-6) Evaluate and plot results
-
-```
-python -m aimvee.cli evaluate-qm9 --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits --models-root models
-python -m aimvee.cli plot-qm9 --results-dir outputs/qm9_testing --split-method random
-```
-
 Notes:
 - `prepare-splits` can auto-generate `metadata_e_exc_ss.csv` if you supply `--exc-ss-dir`.
 - Use `python -m aimvee.cli <command> --help` for full argument lists.

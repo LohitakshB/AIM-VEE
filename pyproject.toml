@@ -10,9 +10,11 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
   "joblib",
+  "matplotlib",
   "numpy",
   "periodictable",
   "scikit-learn",
+  "scipy",
   "torch",
   "tqdm",
   "qml",

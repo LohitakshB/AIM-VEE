@@ -490,6 +490,7 @@ def iter_split_csvs(
     seed: int,
     split_method: Optional[str],
     train_all_splits: bool,
+    split_name: Optional[str] = None,
     predefined_train_csv: Optional[Path] = None,
     predefined_val_csv: Optional[Path] = None,
     predefined_test_csv: Optional[Path] = None,
@@ -502,6 +503,8 @@ def iter_split_csvs(
         "tail-split",
     )
     if train_all_splits:
+        if split_name:
+            raise ValueError("Use --split-name with --single-split only.")
         if split_method:
             raise ValueError("Use --train-all-splits without --split-method.")
         methods_to_run = split_methods
@@ -510,6 +513,9 @@ def iter_split_csvs(
 
     for method in methods_to_run:
         method_norm = method.lower().replace("_", "-")
+        split_label = split_name or (
+            "predefined" if method_norm in ("predefined", "pre-defined") else method
+        )
         if method_norm in ("predefined", "pre-defined"):
             if not predefined_train_csv or not predefined_val_csv:
                 raise ValueError(
@@ -527,11 +533,11 @@ def iter_split_csvs(
                     raise FileNotFoundError(
                         f"Predefined test CSV not found: {test_csv}"
                     )
-            output_dir = output_root / "predefined"
+            output_dir = output_root / split_label
             output_dir.mkdir(parents=True, exist_ok=True)
-            yield ("predefined", train_csv, val_csv, output_dir)
+            yield (split_label, train_csv, val_csv, output_dir)
             continue
-        output_dir = output_root / method
+        output_dir = output_root / split_label
         prepare_dataset(
             xyz_dir=xyz_dir,
             metadata_path=metadata_path,
@@ -545,7 +551,7 @@ def iter_split_csvs(
             split_method=method,
         )
         yield (
-            method,
+            split_label,
             output_dir / "train.csv",
             output_dir / "val.csv",
             output_dir,
@@ -608,6 +614,10 @@ def add_split_args(
             "pre-defined",
         ),
         help="Split strategy for train/val/test generation.",
+    )
+    parser.add_argument(
+        "--split-name",
+        help="Override the output subdirectory name for the split (default: split method).",
     )
     split_mode = parser.add_mutually_exclusive_group()
     split_mode.add_argument(

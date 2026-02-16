@@ -59,7 +59,4 @@ models/
   rf_morgan/
 
 outputs/
-  qm9_testing/
 ```
-
-`evaluate-qm9` writes predictions and metrics under `outputs/qm9_testing/<split>/`.

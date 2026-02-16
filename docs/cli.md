@@ -17,11 +17,6 @@ Run `--help` on any command for full arguments.
 - `train-chemprop`: Chemprop baseline (requires `chemprop` CLI).
 - `train-rf-morgan`: random forest baseline on Morgan fingerprints.
 
-## Evaluation commands
-
-- `evaluate-qm9`: run test evaluation across selected models.
-- `plot-qm9`: generate parity, residual, and error plots.
-
 ## Examples
 
 Generate splits and train SchNet:
@@ -29,11 +24,4 @@ Generate splits and train SchNet:
 ```
 python -m aimvee.cli prepare-splits --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --output-dir data/QM9GWBSE/splits
 python -m aimvee.cli train-schnet --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits --output-dir models/schnet
-```
-
-Evaluate and plot:
-
-```
-python -m aimvee.cli evaluate-qm9 --xyz-dir data/QM9GWBSE/QM9_xyz_files --metadata data/QM9GWBSE/metadata_e_exc_ss.csv --splits-output data/QM9GWBSE/splits
-python -m aimvee.cli plot-qm9 --results-dir outputs/qm9_testing --split-method random
 ```
