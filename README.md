@@ -13,7 +13,7 @@ pip install .
 
 ## Data and model access (Zenodo)
 
-- Datasets & Trained models are available on Zenodo: `TODO_ADD_ZENODO_MODELS_LINK`
+- Datasets & Trained models are available on Zenodo: `https://zenodo.org/records/18843958`
 
 ## Quickstart
 
