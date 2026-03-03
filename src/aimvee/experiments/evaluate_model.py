@@ -21,8 +21,10 @@ from scipy.stats import norm, spearmanr
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import SchNet, global_mean_pool
+from torch.utils.data import DataLoader as TorchDataLoader
 
 from aimvee.datasets.geometry import GeometryCsvDataset, GeometryQemfiDataset
+from aimvee.datasets.qemfi import QemfiDataset
 from aimvee.experiments.mff_mlp import (
     _build_schnet_model as _build_mff_schnet,
     _capture_schnet_latent as _capture_latent,
@@ -56,6 +58,7 @@ _STYLE = {
 
 _PRIMARY_COLOR = "#1f77b4"
 _SECONDARY_COLOR = "#2b2b2b"
+CM_SIZE = 22
 
 
 def _apply_style() -> None:
@@ -184,6 +187,27 @@ def _plot_abs_error(
     if xlim is not None:
         plt.xlim(*xlim)
     plt.grid(axis="y")
+    plt.tight_layout()
+    plt.savefig(path, dpi=200)
+    plt.close()
+
+
+def _plot_mae_rmse_bar(targets: np.ndarray, preds: np.ndarray, path: Path) -> None:
+    err = np.asarray(preds).reshape(-1) - np.asarray(targets).reshape(-1)
+    mae_total = float(np.mean(np.abs(err)))
+    rmse_total = float(np.sqrt(np.mean(err**2)))
+
+    plt.figure(figsize=(5.5, 4.5))
+    plt.bar(
+        ["MAE", "RMSE"],
+        [mae_total, rmse_total],
+        color=[_PRIMARY_COLOR, "#E53935"],
+        alpha=0.85,
+        width=0.55,
+    )
+    plt.ylabel("Error (eV)")
+    plt.title("Overall MAE and RMSE")
+    plt.grid(True, axis="y", alpha=0.25)
     plt.tight_layout()
     plt.savefig(path, dpi=200)
     plt.close()
@@ -525,7 +549,7 @@ def _eval_mff(args: argparse.Namespace) -> Tuple[np.ndarray, np.ndarray]:
     if args.qemfi_fidelity < 0 or args.qemfi_fidelity >= n_fids:
         raise ValueError("qemfi-fidelity out of range.")
     rows = _load_geometry_rows(Path(args.input_csv))
-    cm = build_cm_reps(rows, args.cm_size)
+    cm = build_cm_reps(rows, CM_SIZE)
     qemfi = _predict_qemfi_energies(
         qemfi_model,
         cm,
@@ -590,7 +614,7 @@ def _eval_umff(args: argparse.Namespace) -> Tuple[np.ndarray, np.ndarray, np.nda
     if args.qemfi_fidelity < 0 or args.qemfi_fidelity >= n_fids:
         raise ValueError("qemfi-fidelity out of range.")
     rows = _load_geometry_rows(Path(args.input_csv))
-    cm = build_cm_reps(rows, args.cm_size)
+    cm = build_cm_reps(rows, CM_SIZE)
     qemfi = _predict_qemfi_energies(
         qemfi_model,
         cm,
@@ -642,6 +666,66 @@ def _eval_umff(args: argparse.Namespace) -> Tuple[np.ndarray, np.ndarray, np.nda
     return targets, mean_preds, std_preds
 
 
+def _eval_qemfi(args: argparse.Namespace) -> Tuple[np.ndarray, np.ndarray]:
+    if not args.qemfi_data_dir:
+        raise ValueError("--qemfi-data-dir is required for qemfi.")
+
+    data_dir = Path(args.qemfi_data_dir)
+    method = args.qemfi_method
+    x_test = np.load(data_dir / f"{method}_test.npy")
+    y_test = np.load(data_dir / "EV_test.npy")
+
+    mask = y_test >= 0
+    x_test = x_test[mask]
+    y_test = y_test[mask]
+    if x_test.shape[0] == 0:
+        raise ValueError("QeMFi test set is empty after filtering invalid targets.")
+
+    model_path, scaler_x, scaler_y, pca, _ = _load_qemfi_assets(Path(args.model_dir))
+    device = select_device(args.device)
+    model, model_d_rep, _, _ = _load_qemfi_model(model_path, device)
+
+    d_rep_raw = x_test.shape[1] - 2
+    x_test_rep = x_test[:, :d_rep_raw].astype(np.float32)
+    x_test_idx = x_test[:, d_rep_raw:].astype(np.int64)
+
+    x_test_rep = scaler_x.transform(x_test_rep)
+    if pca is not None:
+        x_test_rep = pca.transform(x_test_rep)
+
+    if x_test_rep.shape[1] != model_d_rep:
+        raise ValueError(
+            "QeMFi representation dimension mismatch between prepared arrays and model."
+        )
+
+    x_test_proc = np.concatenate(
+        [x_test_rep.astype(np.float32), x_test_idx.astype(np.int64)], axis=1
+    )
+    y_test_scaled = scaler_y.transform(y_test.reshape(-1, 1)).ravel()
+
+    test_ds = QemfiDataset(x_test_proc, y_test_scaled)
+    test_loader = TorchDataLoader(
+        test_ds, batch_size=args.qemfi_eval_batch_size, shuffle=False
+    )
+
+    preds_scaled: List[np.ndarray] = []
+    with torch.no_grad():
+        for batch in test_loader:
+            pred = model(
+                batch["feats"].to(device),
+                batch["fid_id"].to(device),
+                batch["state_id"].to(device),
+            )
+            preds_scaled.append(pred.detach().cpu().numpy())
+
+    preds_scaled_arr = np.concatenate(preds_scaled, axis=0).reshape(-1, 1)
+    preds_cm = scaler_y.inverse_transform(preds_scaled_arr).ravel()
+    targets_cm = y_test.reshape(-1)
+
+    cm_to_ev = 1.239841984e-4
+    return targets_cm * cm_to_ev, preds_cm * cm_to_ev
+
+
 def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Evaluate a trained model on an input CSV and generate graphs.",
@@ -650,10 +734,10 @@ def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
     parser.add_argument(
         "--model-type",
         required=True,
-        choices=["schnet", "rf_morgan", "chemprop", "mff_mlp", "umff_mlp"],
+        choices=["qemfi", "schnet", "rf_morgan", "chemprop", "mff_mlp", "umff_mlp"],
     )
     parser.add_argument("--model-dir", required=True)
-    parser.add_argument("--input-csv", required=True)
+    parser.add_argument("--input-csv", default="")
     parser.add_argument("--output-dir", required=True)
 
     parser.add_argument("--device", default="")
@@ -694,8 +778,10 @@ def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
     parser.add_argument("--qemfi-model-dir")
     parser.add_argument("--qemfi-fidelity", type=int, default=4)
     parser.add_argument("--qemfi-batch-size", type=int, default=2048)
+    parser.add_argument("--qemfi-data-dir", default="")
+    parser.add_argument("--qemfi-method", default="CM")
+    parser.add_argument("--qemfi-eval-batch-size", type=int, default=256)
     parser.add_argument("--n-lowest-states", type=int, default=10)
-    parser.add_argument("--cm-size", type=int, default=22)
     parser.add_argument("--schnet-batch-size", type=int, default=32)
     parser.add_argument("--mlp-hidden-dim", type=int, default=256)
     parser.add_argument("--mlp-layers", type=int, default=3)
@@ -705,16 +791,22 @@ def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
 
 
 def run_evaluate_model(args: argparse.Namespace) -> None:
-    input_csv = Path(args.input_csv)
     output_dir = Path(args.output_dir)
     ensure_dir(output_dir)
     plots_dir = output_dir / "plots"
     ensure_dir(plots_dir)
 
     _apply_style()
-    _ensure_target_column(input_csv)
+    if args.model_type != "qemfi":
+        if not args.input_csv:
+            raise ValueError("--input-csv is required for this model type.")
+        input_csv = Path(args.input_csv)
+        _ensure_target_column(input_csv)
 
-    if args.model_type == "schnet":
+    if args.model_type == "qemfi":
+        targets, preds = _eval_qemfi(args)
+        stds = None
+    elif args.model_type == "schnet":
         targets, preds = _eval_schnet(args)
         stds = None
     elif args.model_type == "rf_morgan":
@@ -761,6 +853,8 @@ def run_evaluate_model(args: argparse.Namespace) -> None:
     _plot_abs_error(
         targets, preds, plots_dir / "abs_error.png", args.plot_bins, abs_error_range
     )
+    if args.model_type == "qemfi":
+        _plot_mae_rmse_bar(targets, preds, plots_dir / "mae_rmse_bar.png")
     if stds is not None:
         _plot_uncertainty_hist(
             stds, plots_dir / "uncertainty.png", args.plot_bins, uncertainty_range

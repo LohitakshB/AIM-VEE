@@ -251,7 +251,6 @@ def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
     parser.add_argument("--qemfi-fidelity", type=int, default=4)
     parser.add_argument("--qemfi-batch-size", type=int, default=2048)
     parser.add_argument("--n-lowest-states", type=int, default=10)
-    parser.add_argument("--cm-size", type=int, default=22)
     parser.add_argument("--schnet-batch-size", type=int, default=32)
     parser.add_argument("--mlp-hidden-dim", type=int, default=256)
     parser.add_argument("--mlp-layers", type=int, default=3)

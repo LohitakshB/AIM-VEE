@@ -67,6 +67,9 @@ All model training commands below share split/dataset arguments from the split s
 
 - `evaluate-model`
   - Runs inference and writes metrics + plots.
+  - `--model-type` choices: `qemfi`, `schnet`, `rf_morgan`, `chemprop`, `mff_mlp`, `umff_mlp`
+  - For `qemfi`, pass `--qemfi-data-dir` (prepared arrays dir with `CM_test.npy` and `EV_test.npy`).
+  - For `qemfi`, optional `--qemfi-eval-batch-size` controls prediction batching.
   - Outputs:
     - `<output-dir>/metrics_summary.json`
     - `<output-dir>/plots/*.png`
