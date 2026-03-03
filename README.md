@@ -56,7 +56,7 @@ python -m aimvee.cli train-qemfi \
 ```bash
 python -m aimvee.cli prepare-splits \
   --xyz-dir data/QM9GWBSE/QM9_xyz_files \
-  --metadata data/QM9GWBSE/metadata_e_exc_ss.csv \
+  --metadata data/QM9GWBSE/metadata.csv \
   --splits-output data/QM9GWBSE/splits
 ```
 
