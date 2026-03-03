@@ -1,6 +1,6 @@
 # AIM-VEE
 
-AIM-VEE is a research codebase for predicting vertical excitation energies (VEE) with:
+AIM-VEE is a framework for predicting vertical excitation energies (VEE) with:
 - a multi-fidelity fusion pipeline (QeMFi surrogate + SchNet latent + MFF-MLP / UMFF-MLP)
 - baseline models (SchNet, Chemprop, RF Morgan)
 - inference and evaluation tooling for predictions, plots, and aggregate metrics
