@@ -386,7 +386,9 @@ def _parse_prediction_csv(
         fields = {name.lower(): name for name in reader.fieldnames}
         target_col = fields.get("target") or fields.get("target_0")
         pred_col = (
-            fields.get("pred_mean")
+            fields.get("pred_value")
+            or fields.get("pred_val")
+            or fields.get("pred_mean")
             or fields.get("pred_0")
             or fields.get("preds")
             or fields.get("prediction")

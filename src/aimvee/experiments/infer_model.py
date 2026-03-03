@@ -155,7 +155,7 @@ def _write_predictions_csv(
     stds: Optional[np.ndarray] = None,
     calibrated_stds: Optional[np.ndarray] = None,
 ) -> None:
-    fields, rows = _load_csv_rows(input_csv)
+    _, rows = _load_csv_rows(input_csv)
     n = len(rows)
     if preds.shape[0] != n:
         raise ValueError(
@@ -163,42 +163,80 @@ def _write_predictions_csv(
         )
 
     preds = np.asarray(preds).reshape(-1)
-    targets = None if targets is None else np.asarray(targets).reshape(-1)
-    stds = None if stds is None else np.asarray(stds).reshape(-1)
-    calibrated_stds = (
+    with output_csv.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["file_path", "pred_value"])
+        writer.writeheader()
+        for idx, row in enumerate(rows):
+            file_path = (
+                row.get("xyz_path")
+                or row.get("file_path")
+                or row.get("path")
+                or ""
+            )
+            writer.writerow(
+                {
+                    "file_path": file_path,
+                    "pred_value": f"{float(preds[idx]):.12g}",
+                }
+            )
+
+
+def _write_umff_predictions_csv(
+    input_csv: Path,
+    output_csv: Path,
+    preds: np.ndarray,
+    *,
+    stds: Optional[np.ndarray],
+    calibrated_stds: Optional[np.ndarray],
+) -> None:
+    _, rows = _load_csv_rows(input_csv)
+    n = len(rows)
+
+    preds = np.asarray(preds).reshape(-1)
+    if preds.shape[0] != n:
+        raise ValueError(
+            f"Prediction count mismatch for {input_csv}: got {preds.shape[0]}, expected {n}."
+        )
+
+    if stds is None and calibrated_stds is None:
+        raise ValueError("UMFF inference requires uncertainty values.")
+
+    stds_arr = None if stds is None else np.asarray(stds).reshape(-1)
+    calibrated_arr = (
         None if calibrated_stds is None else np.asarray(calibrated_stds).reshape(-1)
     )
 
-    if targets is not None and targets.shape[0] != n:
-        raise ValueError("Target length mismatch when writing predictions.")
-    if stds is not None and stds.shape[0] != n:
-        raise ValueError("Uncertainty length mismatch when writing predictions.")
-    if calibrated_stds is not None and calibrated_stds.shape[0] != n:
-        raise ValueError("Calibrated uncertainty length mismatch when writing predictions.")
-
-    extra_fields = ["pred_mean"]
-    if "target" not in fields and targets is not None:
-        extra_fields.append("target")
-    if stds is not None:
-        extra_fields.append("pred_std")
-    if calibrated_stds is not None:
-        extra_fields.append("pred_std_calibrated")
-
-    out_fields = _append_unique_columns(fields, extra_fields)
+    if stds_arr is not None and stds_arr.shape[0] != n:
+        raise ValueError("Uncertainty length mismatch when writing UMFF predictions.")
+    if calibrated_arr is not None and calibrated_arr.shape[0] != n:
+        raise ValueError(
+            "Calibrated uncertainty length mismatch when writing UMFF predictions."
+        )
 
     with output_csv.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=out_fields)
+        writer = csv.DictWriter(
+            handle, fieldnames=["file_path", "pred_value", "pred_uncertainty"]
+        )
         writer.writeheader()
         for idx, row in enumerate(rows):
-            out = dict(row)
-            out["pred_mean"] = f"{float(preds[idx]):.12g}"
-            if "target" not in row and targets is not None:
-                out["target"] = f"{float(targets[idx]):.12g}"
-            if stds is not None:
-                out["pred_std"] = f"{float(stds[idx]):.12g}"
-            if calibrated_stds is not None:
-                out["pred_std_calibrated"] = f"{float(calibrated_stds[idx]):.12g}"
-            writer.writerow(out)
+            file_path = (
+                row.get("xyz_path")
+                or row.get("file_path")
+                or row.get("path")
+                or ""
+            )
+            uncertainty = (
+                float(calibrated_arr[idx])
+                if calibrated_arr is not None
+                else float(stds_arr[idx])  # stds_arr is guaranteed non-None here.
+            )
+            writer.writerow(
+                {
+                    "file_path": file_path,
+                    "pred_value": f"{float(preds[idx]):.12g}",
+                    "pred_uncertainty": f"{uncertainty:.12g}",
+                }
+            )
 
 
 def build_parser(add_help: bool = True) -> argparse.ArgumentParser:
@@ -266,14 +304,23 @@ def run_infer_model(args: argparse.Namespace) -> None:
     targets, preds, stds, calibrated_stds = _infer_predictions(args)
 
     predictions_csv = output_dir / "predictions.csv"
-    _write_predictions_csv(
-        Path(args.input_csv),
-        predictions_csv,
-        preds,
-        targets=targets,
-        stds=stds,
-        calibrated_stds=calibrated_stds,
-    )
+    if args.model_type == "umff_mlp":
+        _write_umff_predictions_csv(
+            Path(args.input_csv),
+            predictions_csv,
+            preds,
+            stds=stds,
+            calibrated_stds=calibrated_stds,
+        )
+    else:
+        _write_predictions_csv(
+            Path(args.input_csv),
+            predictions_csv,
+            preds,
+            targets=targets,
+            stds=stds,
+            calibrated_stds=calibrated_stds,
+        )
 
     print(f"Saved predictions to {predictions_csv}")
 

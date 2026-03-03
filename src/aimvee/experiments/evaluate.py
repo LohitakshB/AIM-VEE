@@ -126,9 +126,20 @@ def _parse_predictions(path: Path) -> PredictionBatch:
             ["target", "target_0", "y", "y_true", "label"]
         )
         pred_col = pick(
-            ["prediction", "pred", "pred_0", "pred_mean", "y_pred", "preds"]
+            [
+                "pred_value",
+                "pred_val",
+                "prediction",
+                "pred",
+                "pred_0",
+                "pred_mean",
+                "y_pred",
+                "preds",
+            ]
         )
-        std_col = pick(["pred_std", "std", "sigma", "pred_sigma"])
+        std_col = pick(
+            ["pred_uncertainty", "pred_std", "std", "sigma", "pred_sigma"]
+        )
         std_cal_col = pick([
             "pred_std_calibrated",
             "std_calibrated",
