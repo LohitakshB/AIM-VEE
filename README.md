@@ -8,14 +8,8 @@ AIM-VEE is a framework for predicting vertical excitation energies (VEE) with:
 ## Installation
 
 ```bash
-pip install -e .
+pip install .
 ```
-
-Optional dependencies:
-- `qml`: QeMFi Coulomb matrix generation
-- `rdkit` (or `rdkit-pypi`): Morgan features and scaffold/SMILES utilities
-- `torch_geometric`: SchNet, MFF-MLP, UMFF-MLP
-- `chemprop`: Chemprop training/inference CLIs
 
 ## Data and model access (Zenodo)
 
