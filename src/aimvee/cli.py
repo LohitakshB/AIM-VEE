@@ -15,6 +15,10 @@ from aimvee.experiments.evaluate_model import (
     build_parser as build_eval_model_parser,
     run_evaluate_model,
 )
+from aimvee.experiments.infer_model import (
+    build_parser as build_infer_model_parser,
+    run_infer_model,
+)
 from aimvee.experiments.mff_mlp import build_parser as build_mff_mlp_parser
 from aimvee.experiments.mff_mlp import run_mff_mlp
 from aimvee.experiments.umff_mlp import build_parser as build_umff_mlp_parser
@@ -141,6 +145,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run model inference on an input CSV and generate graphs.",
     )
     eval_model_parser.set_defaults(func=run_evaluate_model)
+
+    infer_model_parser = subparsers.add_parser(
+        "infer-model",
+        parents=[build_infer_model_parser(add_help=False)],
+        help="Run model inference on an input CSV and write predictions only.",
+    )
+    infer_model_parser.set_defaults(func=run_infer_model)
 
     return parser
 

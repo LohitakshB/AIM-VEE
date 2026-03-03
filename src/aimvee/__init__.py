@@ -16,6 +16,7 @@ _API_EXPORTS = (
     "prep_qemfi",
     "train_qemfi",
     "train_mff_mlp",
+    "infer_model",
 )
 
 __all__ = [

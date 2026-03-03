@@ -3,13 +3,18 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+
+# Standalone configuration.
+BASE_DIR = Path("outputs")
+OUT_PATH = Path("outputs/performance_bar_mae.png")
+SPLIT_ORDER = ["random", "size", "bemis-murcko", "tail-split"]
+MODEL_ORDER = ["chemprop", "rf_morgan", "schnet", "mff_mlp", "umff-mlp "]
 
 _PRIMARY_COLOR = "#0072B2"
 _SECONDARY_COLOR = "#2b2b2b"
@@ -134,46 +139,30 @@ def _plot_metric(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--base-dir",
-        type=Path,
-        default=Path("outputs"),
-        help="Directory containing *_eval/<split>/metrics_summary.json",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=Path("outputs/performance_bar_mae.png"),
-        help="Output image path",
-    )
-    args = parser.parse_args()
-
-    rows = _read_metrics(args.base_dir)
+    rows = _read_metrics(BASE_DIR)
     if not rows:
-        raise SystemExit(f"No metrics_summary.json files found in {args.base_dir}")
-
-    split_order = ["random", "size", "bemis-murcko", "tail-split"]
-    model_order = ["chemprop", "rf_morgan", "schnet", "mff_mlp", "umff"]
+        raise SystemExit(f"No metrics_summary.json files found in {BASE_DIR}")
 
     available_splits = _ordered_unique(row["split"] for row in rows)
     available_models = _ordered_unique(row["model"] for row in rows)
 
-    splits = [s for s in split_order if s in available_splits] + [
-        s for s in available_splits if s not in split_order
+    splits = [s for s in SPLIT_ORDER if s in available_splits] + [
+        s for s in available_splits if s not in SPLIT_ORDER
     ]
-    models = [m for m in model_order if m in available_models] + [
-        m for m in available_models if m not in model_order
+    models = [m for m in MODEL_ORDER if m in available_models] + [
+        m for m in available_models if m not in MODEL_ORDER
     ]
 
     mae = _pivot(rows, splits, models, "mae")
     rmse = _pivot(rows, splits, models, "rmse")
 
-    rmse_out = args.out.with_name(f"{args.out.stem.replace('mae', 'rmse')}{args.out.suffix}")
-    if rmse_out == args.out:
-        rmse_out = args.out.with_name(f"{args.out.stem}_rmse{args.out.suffix}")
+    rmse_out = OUT_PATH.with_name(
+        f"{OUT_PATH.stem.replace('mae', 'rmse')}{OUT_PATH.suffix}"
+    )
+    if rmse_out == OUT_PATH:
+        rmse_out = OUT_PATH.with_name(f"{OUT_PATH.stem}_rmse{OUT_PATH.suffix}")
 
-    _plot_metric(args.out, mae, "MAE (eV)", splits, models)
+    _plot_metric(OUT_PATH, mae, "MAE (eV)", splits, models)
     _plot_metric(rmse_out, rmse, "RMSE (eV)", splits, models)
 
 

@@ -1,10 +1,10 @@
 # Data layout
 
-This project expects local data and artifacts in the following layout (not tracked by git).
+This project expects local datasets/artifacts in a non-versioned workspace layout.
 
 ## QeMFi data
 
-```
+```text
 data/
   QeMFI_all/
     QeMFi/                  # raw QeMFi .npz files
@@ -17,46 +17,68 @@ data/
       ...
 ```
 
-Key commands:
-- `generate-cm` writes Coulomb matrices into `QeMFi_cm/`.
-- `prep-qemfi` writes training arrays into `model_training_test_data/`.
+Relevant commands:
+- `generate-cm` -> writes to `QeMFI_all/QeMFi_cm`
+- `prep-qemfi` -> writes to `QeMFI_all/model_training_test_data`
 
 ## QM9-GWBSE data
 
-```
+```text
 data/
   QM9GWBSE/
     QM9_xyz_files/          # XYZ geometries
-    E_exc_SS/               # per-geometry .dat files (optional for metadata build)
-    metadata_e_exc_ss.csv   # metadata CSV (id, xyz_path, target)
+    E_exc_SS/               # optional .dat files for auto metadata generation
+    metadata_e_exc_ss.csv   # metadata input
     splits/
       random/
         train.csv
         val.csv
         test.csv
-      ...
+      bemis-murcko/
+      size/
+      tail-split/
 ```
 
-Key commands:
-- `prepare-splits` reads `metadata_e_exc_ss.csv` and writes `splits/`.
-- If `metadata_e_exc_ss.csv` is missing, use `--exc-ss-dir` or
-  `scripts/generate_metadata.py` to build it.
-
-Expected metadata columns:
-- `id` or `geometry_id`
+Metadata columns used by split/training code:
+- geometry id column (default `id` in split prep; training defaults to `geometry` after parser remap)
 - `xyz_path`
-- `lowest_excited_state` (target)
-- `smiles` (required for Chemprop/RF Morgan)
+- target column (default `lowest_excited_state` in split prep; training defaults to `output` after remap)
+- `smiles` (required for Chemprop/RF Morgan unless derivable)
 
-## Model artifacts and outputs
+## Model artifacts
 
-```
+```text
 models/
   qemfi_surrogate/
-  mff_mlp/
-  schnet/
-  chemprop/
-  rf_morgan/
+    best_model.pt
+    scaler_X.pkl
+    scaler_y.pkl
+    pca_X.pkl (optional)
 
+  mff_mlp/<split>/
+    best_model.pt
+    best_schnet.pt
+    qemfi_scaler.pkl
+    test_predictions.csv
+
+  umff_mlp/<split>/
+    ensemble_*/best_model.pt
+    ensemble_*/best_schnet.pt
+    qemfi_scaler.pkl
+    isotonic_reg.pkl
+    test_predictions.csv
+
+  schnet/<split>/best_model.pt
+  rf_morgan/<split>/rf_morgan.pkl
+  chemprop/<split>/...        # produced by Chemprop CLI
+```
+
+## Runtime outputs
+
+```text
 outputs/
+  *_infer/.../predictions.csv
+  *_eval/.../metrics_summary.json
+  *_eval/.../plots/*.png
+  eval_summary.json            # from `evaluate`
 ```

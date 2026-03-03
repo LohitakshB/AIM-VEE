@@ -10,6 +10,7 @@ from typing import Optional, Union
 from aimvee.data_utils.data_prep import iter_split_csvs
 from aimvee.experiments import chemprop as chemprop_exp
 from aimvee.experiments import data_prep as data_prep_exp
+from aimvee.experiments import infer_model as infer_model_exp
 from aimvee.experiments import mff_mlp as mff_mlp_exp
 from aimvee.experiments import qemfi as qemfi_exp
 from aimvee.experiments import rf_morgan as rf_morgan_exp
@@ -377,3 +378,87 @@ def train_mff_mlp(
         device=device,
     )
     mff_mlp_exp.run_mff_mlp(args)
+
+
+def infer_model(
+    *,
+    model_type: str,
+    model_dir: Union[str, Path],
+    input_csv: Union[str, Path],
+    output_dir: Union[str, Path],
+    device: str = "",
+    batch_size: int = 32,
+    hidden_dim: int = 128,
+    num_filters: int = 128,
+    num_interactions: int = 6,
+    num_gaussians: int = 50,
+    cutoff: float = 10.0,
+    max_num_neighbors: int = 32,
+    readout: str = "add",
+    dipole: bool = False,
+    radius: int = 2,
+    n_bits: int = 2048,
+    chemprop_args: Optional[str] = None,
+    chemprop_checkpoint_dir: Optional[Union[str, Path]] = None,
+    chemprop_checkpoint_path: Optional[Union[str, Path]] = None,
+    schnet_hidden_dim: int = 128,
+    schnet_num_filters: int = 128,
+    schnet_num_interactions: int = 6,
+    schnet_num_gaussians: int = 50,
+    schnet_cutoff: float = 10.0,
+    schnet_max_num_neighbors: int = 32,
+    schnet_readout: str = "add",
+    schnet_dipole: bool = False,
+    qemfi_model_dir: Optional[Union[str, Path]] = None,
+    qemfi_fidelity: int = 4,
+    qemfi_batch_size: int = 2048,
+    n_lowest_states: int = 10,
+    cm_size: int = 22,
+    schnet_batch_size: int = 32,
+    mlp_hidden_dim: int = 256,
+    mlp_layers: int = 3,
+    mlp_dropout: float = 0.1,
+) -> None:
+    args = argparse.Namespace(
+        model_type=model_type,
+        model_dir=Path(model_dir),
+        input_csv=Path(input_csv),
+        output_dir=Path(output_dir),
+        device=device,
+        batch_size=batch_size,
+        hidden_dim=hidden_dim,
+        num_filters=num_filters,
+        num_interactions=num_interactions,
+        num_gaussians=num_gaussians,
+        cutoff=cutoff,
+        max_num_neighbors=max_num_neighbors,
+        readout=readout,
+        dipole=dipole,
+        radius=radius,
+        n_bits=n_bits,
+        chemprop_args=chemprop_args,
+        chemprop_checkpoint_dir=(
+            Path(chemprop_checkpoint_dir) if chemprop_checkpoint_dir else None
+        ),
+        chemprop_checkpoint_path=(
+            Path(chemprop_checkpoint_path) if chemprop_checkpoint_path else None
+        ),
+        schnet_hidden_dim=schnet_hidden_dim,
+        schnet_num_filters=schnet_num_filters,
+        schnet_num_interactions=schnet_num_interactions,
+        schnet_num_gaussians=schnet_num_gaussians,
+        schnet_cutoff=schnet_cutoff,
+        schnet_max_num_neighbors=schnet_max_num_neighbors,
+        schnet_readout=schnet_readout,
+        schnet_dipole=schnet_dipole,
+        qemfi_model_dir=Path(qemfi_model_dir) if qemfi_model_dir else None,
+        qemfi_fidelity=qemfi_fidelity,
+        qemfi_batch_size=qemfi_batch_size,
+        n_lowest_states=n_lowest_states,
+        cm_size=cm_size,
+        schnet_batch_size=schnet_batch_size,
+        mlp_hidden_dim=mlp_hidden_dim,
+        mlp_layers=mlp_layers,
+        mlp_dropout=mlp_dropout,
+    )
+    infer_model_exp.run_infer_model(args)
