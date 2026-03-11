@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aimvee"
+version = "0.1.0"
+description = "AIM-VEE: research codebase for VEE prediction and related models."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "joblib",
+  "matplotlib",
+  "numpy",
+  "periodictable",
+  "scikit-learn",
+  "scipy",
+  "torch",
+  "tqdm",
+  "qml",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+chem = ["rdkit-pypi"]
+
+[project.scripts]
+aimvee = "aimvee.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

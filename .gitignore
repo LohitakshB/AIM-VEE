@@ -1,0 +1,44 @@
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Python caches/envs
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+env/
+.conda/
+.env/
+.venv_plot/
+
+# Packaging/build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Logs / experiment outputs
+*.log
+runs/
+wandb/
+outputs/
+
+# Large project assets
+models/
+data/
+*.pkl
+*.npy
+*.npz
+*.pt
